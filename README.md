@@ -7,9 +7,14 @@ A mobile application for GP Surgery built with Laravel + NativePHP for iOS and A
 - 🚀 **NativePHP Integration** - Build native mobile apps with Laravel
 - 📱 **Cross-Platform** - Deploy to iOS and Android from a single codebase
 - 🔐 **User Authentication** - Secure login and registration with Laravel Sanctum
+- 👥 **Patient Management** - Complete CRUD operations for patient records
+- 👨‍⚕️ **Doctor Management** - Manage doctor profiles and specializations
+- 📅 **Appointment Scheduling** - Book and manage patient appointments
+- 📋 **Medical Records** - Track diagnoses, treatments, and prescriptions
+- 🔒 **API Security** - Token-based authentication with Laravel Sanctum
 - 💾 **SQLite Database** - Lightweight and portable data storage
 - 📧 **Email Notifications** - Built-in email support
-- �� **Modern UI** - Built with Laravel and Vite
+- ✅ **Comprehensive Tests** - Full test coverage for API endpoints
 
 ## Requirements
 
@@ -45,15 +50,49 @@ NATIVEPHP_APP_VERSION=1.0.0
 NATIVEPHP_APP_ID=com.gpsurgery.mobile
 ```
 
-5. **Run migrations**
+5. **Run migrations and seed database**
 ```bash
-php artisan migrate
+php artisan migrate --seed
 ```
 
 6. **Start development server**
 ```bash
 php artisan serve
 ```
+
+## API Documentation
+
+The application provides a RESTful API for managing GP Surgery operations. See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed endpoint documentation.
+
+### Quick Start
+
+1. Register a user:
+```bash
+curl -X POST http://localhost:8000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Admin","email":"admin@example.com","password":"password","password_confirmation":"password"}'
+```
+
+2. Login to get access token:
+```bash
+curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"password"}'
+```
+
+3. Access protected endpoints with the token:
+```bash
+curl -X GET http://localhost:8000/api/patients \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Default Test Data
+
+After running `php artisan db:seed`, the database will be populated with:
+- 3 doctors (General Practice and Pediatrics)
+- 3 patients with medical histories
+- 3 scheduled appointments
+- 1 admin user (email: admin@gpsurgery.com)
 
 ## Building for Mobile
 
