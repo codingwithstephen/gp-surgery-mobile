@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePatientRequest;
+use App\Http\Requests\UpdatePatientRequest;
+use App\Http\Resources\PatientResource;
 use App\Models\Patient;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
 
 class PatientController extends Controller
 {
@@ -15,34 +16,21 @@ class PatientController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Patient::class);
+        
         $patients = Patient::with(['appointments', 'medicalRecords'])->paginate(15);
-        return response()->json($patients);
+        return PatientResource::collection($patients);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StorePatientRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email',
-            'phone' => 'required|string|max:20',
-            'date_of_birth' => 'required|date',
-            'gender' => 'required|string|in:male,female,other',
-            'address' => 'nullable|string',
-            'nhs_number' => 'required|string|unique:patients,nhs_number',
-            'medical_history' => 'nullable|string',
-            'allergies' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $patient = Patient::create($request->all());
-        return response()->json($patient, Response::HTTP_CREATED);
+        $this->authorize('create', Patient::class);
+        
+        $patient = Patient::create($request->validated());
+        return new PatientResource($patient);
     }
 
     /**
@@ -50,33 +38,20 @@ class PatientController extends Controller
      */
     public function show(Patient $patient)
     {
-        return response()->json($patient->load(['appointments', 'medicalRecords']));
+        $this->authorize('view', $patient);
+        
+        return new PatientResource($patient->load(['appointments', 'medicalRecords']));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Patient $patient)
+    public function update(UpdatePatientRequest $request, Patient $patient)
     {
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'sometimes|required|string|max:255',
-            'last_name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:patients,email,' . $patient->id,
-            'phone' => 'sometimes|required|string|max:20',
-            'date_of_birth' => 'sometimes|required|date',
-            'gender' => 'sometimes|required|string|in:male,female,other',
-            'address' => 'nullable|string',
-            'nhs_number' => 'sometimes|required|string|unique:patients,nhs_number,' . $patient->id,
-            'medical_history' => 'nullable|string',
-            'allergies' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $patient->update($request->all());
-        return response()->json($patient);
+        $this->authorize('update', $patient);
+        
+        $patient->update($request->validated());
+        return new PatientResource($patient);
     }
 
     /**
@@ -84,6 +59,8 @@ class PatientController extends Controller
      */
     public function destroy(Patient $patient)
     {
+        $this->authorize('delete', $patient);
+        
         $patient->delete();
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

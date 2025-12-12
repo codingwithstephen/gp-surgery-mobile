@@ -3,66 +3,49 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAppointmentRequest;
+use App\Http\Requests\UpdateAppointmentRequest;
+use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Appointment::class);
+        
         $appointments = Appointment::with(['patient', 'doctor'])->paginate(15);
-        return response()->json($appointments);
+        return AppointmentResource::collection($appointments);
     }
 
-    public function store(Request $request)
+    public function store(StoreAppointmentRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'patient_id' => 'required|exists:patients,id',
-            'doctor_id' => 'required|exists:doctors,id',
-            'appointment_date' => 'required|date',
-            'duration_minutes' => 'sometimes|integer|min:15',
-            'status' => 'sometimes|in:scheduled,confirmed,completed,cancelled',
-            'reason' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $appointment = Appointment::create($request->all());
-        return response()->json($appointment->load(['patient', 'doctor']), Response::HTTP_CREATED);
+        $this->authorize('create', Appointment::class);
+        
+        $appointment = Appointment::create($request->validated());
+        return new AppointmentResource($appointment->load(['patient', 'doctor']));
     }
 
     public function show(Appointment $appointment)
     {
-        return response()->json($appointment->load(['patient', 'doctor', 'medicalRecord']));
+        $this->authorize('view', $appointment);
+        
+        return new AppointmentResource($appointment->load(['patient', 'doctor', 'medicalRecord']));
     }
 
-    public function update(Request $request, Appointment $appointment)
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment)
     {
-        $validator = Validator::make($request->all(), [
-            'patient_id' => 'sometimes|required|exists:patients,id',
-            'doctor_id' => 'sometimes|required|exists:doctors,id',
-            'appointment_date' => 'sometimes|required|date',
-            'duration_minutes' => 'sometimes|integer|min:15',
-            'status' => 'sometimes|in:scheduled,confirmed,completed,cancelled',
-            'reason' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $appointment->update($request->all());
-        return response()->json($appointment->load(['patient', 'doctor']));
+        $this->authorize('update', $appointment);
+        
+        $appointment->update($request->validated());
+        return new AppointmentResource($appointment->load(['patient', 'doctor']));
     }
 
     public function destroy(Appointment $appointment)
     {
+        $this->authorize('delete', $appointment);
+        
         $appointment->delete();
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
